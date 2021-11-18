@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup(
     name='wsdl2py generator',
-    version='0.4',
+    version='1.0',
     license="MIT",
     description='Python classes generator from WSDL',
     author='Tomas Zikmund',
@@ -14,4 +14,7 @@ setup(
     install_requires=[
         "zeep>=4.1.0"
     ],
+    entry_points={
+        "console_scripts": ["wsdl2py=wsdl2py_generator.__main__:main"]
+    }
 )
