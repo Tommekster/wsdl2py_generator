@@ -85,6 +85,7 @@ def parse_arguments(parent_name: str, args: str, types: xsd.Schema) -> List[Fiel
 
 def get_type_name(xml_type_name: str, types: xsd.Schema) -> str:
     known_types = {}
+    _type = None
     try:
         _type = types.get_type(xml_type_name, fail_silently=True)
     except zeep_exc.LookupError:
