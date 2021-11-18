@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup(
     name='wsdl2py generator',
-    version='0.1',
+    version='0.2',
     license="MIT",
     description='Python classes generator from WSDL',
     author='Tomas Zikmund',

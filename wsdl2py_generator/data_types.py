@@ -66,26 +66,13 @@ from typing import Union
 
 
 def parse_arguments(parent_name: str, args: str, types: xsd.Schema) -> List[FieldDef]:
-    known_types = {}
     R = re.compile(
         r"(?P<arg>\w+): (?P<type>(?P<simple>[\w\d]+:\w+)|(?P<complex>\{(((\w+: )?[\w\d]+:\w+), )*?(((\w+: )?(\w|\d)+:\w+))\}))")
     fields = []
     complex_types = []
     for name, t, st, ct, *_ in R.findall(args):
         if t == st:
-            try:
-                _type = types.get_type(st, fail_silently=True)
-            except zeep_exc.LookupError:
-                pass
-            if _type and not hasattr(_type, "elements") and len(_type.accepted_types) == 1:
-                field_type = type_fullname(_type.accepted_types[0])
-            elif _type and not hasattr(_type, "elements") and len(_type.accepted_types) > 1:
-                names = (type_fullname(t) for t in _type.accepted_types)
-                field_type = "Union[" + ", ".join(names) + "]"
-            elif _type and hasattr(_type, "elements"):
-                field_type = _type.name
-            else:
-                field_type = known_types[st] if st in known_types else st
+            field_type = get_type_name(st, types)
         elif t == ct:
             field_type = f"{parent_name}_{name}"
             complex_types.append(("", field_type, ct))
@@ -94,6 +81,24 @@ def parse_arguments(parent_name: str, args: str, types: xsd.Schema) -> List[Fiel
         field = FieldDef(name=name, type=field_type)
         fields.append(field)
     return fields, complex_types
+
+
+def get_type_name(xml_type_name: str, types: xsd.Schema) -> str:
+    known_types = {}
+    try:
+        _type = types.get_type(xml_type_name, fail_silently=True)
+    except zeep_exc.LookupError:
+        pass
+    if _type and not hasattr(_type, "elements") and len(_type.accepted_types) == 1:
+        field_type = type_fullname(_type.accepted_types[0])
+    elif _type and not hasattr(_type, "elements") and len(_type.accepted_types) > 1:
+        names = (type_fullname(t) for t in _type.accepted_types)
+        field_type = "Union[" + ", ".join(names) + "]"
+    elif _type and hasattr(_type, "elements"):
+        field_type = _type.name
+    else:
+        field_type = known_types[xml_type_name] if xml_type_name in known_types else xml_type_name
+    return field_type
 
 
 def type_fullname(klass: type):
