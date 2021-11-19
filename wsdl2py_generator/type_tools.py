@@ -1,10 +1,14 @@
 from zeep import xsd
 
 
-def get_python_type(_type: xsd.Type) -> str:
+def get_python_type(_type: xsd.Type, parent_name: str = "") -> str:
+    if type(_type) == xsd.types.any.AnyType:
+        return "Any"
     if hasattr(_type, "elements"):
         if _type.is_global:
             return _type.name
+        elif parent_name:  # nested type
+            return f"{parent_name}_{_type.name}"
     else:
         if len(_type.accepted_types) == 1:
             return type_fullname(_type.accepted_types[0])

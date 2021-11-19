@@ -29,7 +29,11 @@ def generate_operations(service: zeep.wsdl.definitions.Service) -> List[Operatio
             arguments=[
                 FieldDef(
                     name=name,
-                    type=get_python_type(e.type)
+                    type=get_python_type(
+                        e.type,
+                        parent_name=operation.input.body.type.name
+                    ),
+                    is_optional=e.is_optional
                 )
                 for name, e in (
                     operation.input.body.type.elements
@@ -54,7 +58,7 @@ def generate_code(services: Iterable[ServiceDef]) -> str:
     code = f"""import zeep
 from .data_types import *
 import datetime
-from typing import Union
+from typing import Union, Optional
 
 
 {definitions}

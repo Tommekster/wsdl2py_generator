@@ -1,18 +1,21 @@
 from typing import List
 from dataclasses import dataclass
+import re
 
 
 @dataclass
 class FieldDef:
     name: str
     type: str
+    is_optional: bool
 
     def __repr__(self) -> str:
         return self.code
 
     @property
     def code(self) -> str:
-        return f"{self.name}: {self.type}"
+        _type = f"Optional[{self.type}]" if self.is_optional else self.type
+        return f"{self.name}: {_type}"
 
 
 @dataclass
@@ -46,14 +49,18 @@ class OperationDef:
         return f"{self.name}({_arguments}) -> {self.return_type}"
 
     @property
+    def safe_name(self) -> str:
+        return re.sub(r"\W", "_", self.name)
+
+    @property
     def code(self) -> str:
         _arguments = ", ".join(repr(a) for a in self.arguments)
         _arguments = ", ".join(["self", _arguments])
-        _declaration = f"{self.name}({_arguments}) -> {self.return_type}"
+        _declaration = f"{self.safe_name}({_arguments}) -> {self.return_type}"
         _vars = ", ".join(a.name for a in self.arguments)
         code = f"""
 def {_declaration}:
-    return self._service.{self.name}({_vars})
+    return self._service["{self.name}"]({_vars})
 """
         return code
 
