@@ -1,60 +1,8 @@
 from typing import Iterable, List
 import zeep.wsdl
 import zeep.wsdl.definitions
-from dataclasses import dataclass
-from wsdl2py_generator.data_types import FieldDef, get_type_name
-
-
-@dataclass
-class OperationDef:
-    name: str
-    arguments: List[FieldDef]
-    return_type: str
-
-    def __repr__(self) -> str:
-        _arguments = ", ".join(repr(a) for a in self.arguments)
-        return f"{self.name}({_arguments}) -> {self.return_type}"
-
-    @property
-    def code(self) -> str:
-        _arguments = ", ".join(repr(a) for a in self.arguments)
-        _arguments = ", ".join(["self", _arguments])
-        _declaration = f"{self.name}({_arguments}) -> {self.return_type}"
-        _vars = ", ".join(a.name for a in self.arguments)
-        code = f"""
-def {_declaration}:
-    return self._service.{self.name}({_vars})
-"""
-        return code
-
-
-@dataclass
-class ServiceDef:
-    name: str
-    binding: str
-    url: str
-    operations: List[OperationDef]
-
-    def __repr__(self) -> str:
-        return f"<{self.name}Service({len(self.operations)})>"
-
-    @property
-    def code(self) -> str:
-        _operations = (
-            ""
-            .join(o.code for o in self.operations)
-            .replace("\n", "\n    ")
-            .replace("\n    \n", "\n\n")
-        )
-        code = f"""
-class {self.name}Service:
-    def __init__(self, client: zeep.Client, **kwargs):
-        binding = kwargs.get("binding_name", "{self.binding}")
-        url = kwargs.get("address", "{self.url}")
-        self._service = client.create_service(binding, url)
-{_operations}
-"""
-        return code
+from .type_tools import get_python_type
+from .definitions import FieldDef, ServiceDef, OperationDef
 
 
 def generate_services(doc: zeep.wsdl.Document) -> List[ServiceDef]:
@@ -81,14 +29,19 @@ def generate_operations(service: zeep.wsdl.definitions.Service) -> List[Operatio
             arguments=[
                 FieldDef(
                     name=name,
-                    type=get_type_name(
-                        e.type.qname.text,
-                        port.binding.wsdl.types
-                    )
+                    type=get_python_type(e.type)
                 )
-                for name, e in operation.input.body.type.elements
+                for name, e in (
+                    operation.input.body.type.elements
+                    if hasattr(operation.input.body.type, "elements")
+                    else [(operation.input.body.type.name.lower(), operation.input.body)]
+                )
             ],
-            return_type=operation.output.body.type.name
+            return_type=(
+                operation.output.body.type.name
+                if operation.output
+                else "None"
+            )
         )
         for port in service.ports.values()
         for operation in port.binding._operations.values()
