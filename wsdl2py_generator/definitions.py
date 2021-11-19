@@ -8,13 +8,16 @@ class FieldDef:
     name: str
     type: str
     is_optional: bool
+    is_array: bool
 
     def __repr__(self) -> str:
         return self.code
 
     @property
     def code(self) -> str:
-        _type = f"Optional[{self.type}]" if self.is_optional else self.type
+        _type = self.type
+        _type = f"List[{_type}]" if self.is_array else _type
+        _type = f"Optional[{_type}]" if self.is_optional else _type
         return f"{self.name}: {_type}"
 
 

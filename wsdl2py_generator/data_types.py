@@ -30,7 +30,8 @@ def _create_type_defs(t: xsd.Type, name: str = None) -> List[TypeDef]:
                     e.type,
                     parent_name=name,
                 ),
-                is_optional=e.is_optional
+                is_optional=e.is_optional,
+                is_array=e.max_occurs == "unbounded"
             )
             for e_name, e in t.elements
         ]
@@ -49,7 +50,7 @@ def generate_code(types: Iterable[TypeDef]) -> str:
     code = f"""from __future__ import annotations
 from dataclasses import dataclass
 import datetime
-from typing import Union, Any, Optional
+from typing import Union, Optional, Any, List
 
 
 {definitions}
