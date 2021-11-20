@@ -23,6 +23,11 @@ def _create_type_defs(t: xsd.Type, name: str = None) -> List[TypeDef]:
     definition = TypeDef(
         ns=t.qname.namespace,
         name=name,
+        inherits=[
+            get_python_type(b._xsd_type, parent_name=name)
+            for b in t._extension_types
+            if hasattr(b, "_xsd_type")
+        ],
         fields=[
             FieldDef(
                 name=e_name,
@@ -31,9 +36,10 @@ def _create_type_defs(t: xsd.Type, name: str = None) -> List[TypeDef]:
                     parent_name=name,
                 ),
                 is_optional=e.is_optional,
-                is_array=e.max_occurs == "unbounded"
+                is_array=e.accepts_multiple
             )
-            for e_name, e in t.elements
+            for _fields in (t.elements, t.attributes)
+            for e_name, e in _fields
         ]
     )
     nested_types = [

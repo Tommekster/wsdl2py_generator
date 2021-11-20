@@ -25,6 +25,7 @@ class FieldDef:
 class TypeDef:
     ns: str
     name: str
+    inherits: List[str]
     fields: List[FieldDef]
 
     def __repr__(self) -> str:
@@ -34,8 +35,13 @@ class TypeDef:
     @property
     def code(self) -> str:
         _fields = "\n".join(" "*4 + f.code for f in self.fields)
+        _inherits = ", ".join(self.inherits)
+        _inherits = (
+            f"({_inherits})"
+            if len(self.inherits) else ""
+        )
         code = f"""@dataclass
-class {self.name}:
+class {self.name}{_inherits}:
 {_fields}
 """
         return code
